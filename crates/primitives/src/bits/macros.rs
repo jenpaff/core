@@ -595,6 +595,30 @@ macro_rules! impl_allocative {
 #[macro_export]
 #[cfg(feature = "serde")]
 macro_rules! impl_serde {
+    (Address) => {
+        use derive_more::FromStr;
+
+        #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+        impl $crate::private::serde::Serialize for Address {
+            #[inline]
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                let checksum_address = self.to_checksum(None);
+                serializer.serialize_str(&checksum_address)
+            }
+        }
+
+        #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+        impl<'de> $crate::private::serde::Deserialize<'de> for Address {
+            #[inline]
+            fn deserialize<D: $crate::private::serde::Deserializer<'de>>(
+                deserializer: D,
+            ) -> Result<Self, D::Error> {
+                let s: &str = serde::Deserialize::deserialize(deserializer)?;
+                Self::from_str(s).map_err(serde::de::Error::custom)
+            }
+        }
+    };
+
     ($t:ty) => {
         #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
         impl $crate::private::serde::Serialize for $t {
